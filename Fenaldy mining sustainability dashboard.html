@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mine Ecosystem Dashboard | SA Copper-Gold Operations</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1a5276;
+            --secondary: #7d3c98;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary), #2c3e50);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .kpi-card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            border: none;
+            height: 100%;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .agent-table {
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-stable {
+            background-color: var(--success);
+        }
+        
+        .status-warning {
+            background-color: var(--warning);
+        }
+        
+        .status-critical {
+            background-color: var(--danger);
+        }
+        
+        .cooperation-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .cooperation-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .scenario-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .scenario-card:hover {
+            transform: scale(1.02);
+            border-left-color: var(--primary);
+        }
+        
+        .metric-card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            height: 100%;
+        }
+        
+        .compliance-roadmap {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .compliance-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .compliance-item:last-child {
+            border-bottom: none;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--dark);
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background-color: transparent;
+        }
+        
+        .tab-content {
+            background-color: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            min-height: 500px;
+            padding: 1.5rem;
+        }
+        
+        .digital-twin-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .twin-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .digital-twin-placeholder:hover .twin-overlay {
+            opacity: 1;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        }
+        
+        .agent-detail-modal .modal-content {
+            border-radius: 10px;
+        }
+        
+        .agent-detail-modal .modal-header {
+            background: linear-gradient(135deg, var(--primary), #2c3e50);
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Area -->
+    <div class="notification" id="notificationArea"></div>
+
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-mountain me-2"></i>Mine Ecosystem Dashboard</h1>
+                    <p class="mb-0">Collaborative AI-Based Optimisation for Sustainable Resource Extraction in South Australia</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-light active" id="realtimeBtn">Real-Time</button>
+                        <button class="btn btn-sm btn-outline-light" id="dailyBtn">24h Trend</button>
+                        <button class="btn btn-sm btn-outline-light" id="weeklyBtn">Weekly</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation -->
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Operational Overview</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="agents-tab" data-bs-toggle="tab" data-bs-target="#agents" type="button" role="tab">AI Collaboration</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="scenarios-tab" data-bs-toggle="tab" data-bs-target="#scenarios" type="button" role="tab">Scenario Simulator</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="compliance-tab" data-bs-toggle="tab" data-bs-target="#compliance" type="button" role="tab">Compliance Roadmap</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="dashboardTabsContent">
+            
+            <!-- Operational Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card kpi-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Sustainable Extraction Index</h5>
+                                <div class="kpi-value text-primary" id="seiValue">72/100</div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" id="seiBar" role="progressbar" style="width: 72%"></div>
+                                </div>
+                                <p class="card-text mt-2"><small class="text-muted">Balancing production + sustainability</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Carbon Intensity</h5>
+                                <div class="kpi-value text-warning" id="carbonValue">18.5 kg CO₂-e/t</div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" id="carbonBar" role="progressbar" style="width: 65%"></div>
+                                </div>
+                                <p class="card-text mt-2"><small class="text-muted">Target: <span id="carbonTarget">15.2</span> kg CO₂-e/t</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Ore Recovery Rate</h5>
+                                <div class="kpi-value text-success" id="recoveryValue">91.5%</div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" id="recoveryBar" role="progressbar" style="width: 91.5%"></div>
+                                </div>
+                                <p class="card-text mt-2"><small class="text-muted">Model potential: <span id="recoveryPotential">94%</span></small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Energy Efficiency</h5>
+                                <div class="kpi-value text-info" id="energyValue">3.2 kWh/t</div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-info" id="energyBar" role="progressbar" style="width: 80%"></div>
+                                </div>
+                                <p class="card-text mt-2"><small class="text-muted">Industry avg: <span id="industryAvg">3.8</span> kWh/t</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Mining Operation Digital Twin</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="digital-twin-placeholder">
+                                    <div>
+                                        <i class="fas fa-map-marked-alt fa-4x mb-3"></i>
+                                        <h4>Interactive GIS + 3D Model</h4>
+                                        <p>Haul routes • Ore grade maps • Stockpile status</p>
+                                    </div>
+                                    <div class="twin-overlay">
+                                        <button class="btn btn-light" id="exploreTwinBtn">
+                                            <i class="fas fa-expand me-2"></i>Explore Digital Twin
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card metric-card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">Environmental Responsibility</h5>
+                                <button class="btn btn-sm btn-outline-light" id="refreshEnvBtn">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6>Scope-1 & Scope-2 Emissions</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Scope 1</span>
+                                        <span class="fw-bold" id="scope1Value">12.4 t CO₂-e</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Scope 2</span>
+                                        <span class="fw-bold" id="scope2Value">6.1 t CO₂-e</span>
+                                    </div>
+                                    <div class="progress mt-1" style="height: 6px;">
+                                        <div class="progress-bar bg-warning" id="scope1Bar" role="progressbar" style="width: 67%"></div>
+                                        <div class="progress-bar bg-info" id="scope2Bar" role="progressbar" style="width: 33%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6>Tailings Production</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Current</span>
+                                        <span class="fw-bold" id="tailingsCurrent">42 kt</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Safe Capacity</span>
+                                        <span class="fw-bold" id="tailingsCapacity">65 kt</span>
+                                    </div>
+                                    <div class="progress mt-1" style="height: 6px;">
+                                        <div class="progress-bar bg-success" id="tailingsBar" role="progressbar" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6>Water Consumption</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Intensity</span>
+                                        <span class="fw-bold" id="waterIntensity">0.68 kL/t</span>
+                                    </div>
+                                    <div class="progress mt-1" style="height: 6px;">
+                                        <div class="progress-bar bg-info" id="waterBar" role="progressbar" style="width: 68%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h6>Land Disturbance</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Rehabilitated</span>
+                                        <span class="fw-bold" id="landRehab">42%</span>
+                                    </div>
+                                    <div class="progress mt-1" style="height: 6px;">
+                                        <div class="progress-bar bg-success" id="landBar" role="progressbar" style="width: 42%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Collaboration Tab -->
+            <div class="tab-pane fade" id="agents" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Multi-Agent AI Collaboration Panel</h5>
+                                <p class="mb-0 text-muted">AI decision-making transparency and auditability</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover agent-table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Agent</th>
+                                                <th>Role</th>
+                                                <th>Status</th>
+                                                <th>Cooperation Level</th>
+                                                <th>Current Focus</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Drilling / Blasting</strong></td>
+                                                <td>Fragmentation optimisation</td>
+                                                <td>
+                                                    <span class="status-indicator status-stable" id="drillingStatus"></span>
+                                                    <span class="text-success" id="drillingStatusText">Stable</span>
+                                                </td>
+                                                <td>
+                                                    <div class="cooperation-bar">
+                                                        <div class="cooperation-fill bg-success" id="drillingCoopBar" style="width: 92%"></div>
+                                                    </div>
+                                                    <small id="drillingCoopValue">0.92</small>
+                                                </td>
+                                                <td id="drillingFocus">Optimal fragmentation for processing</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="showAgentDetails('drilling')">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-success" onclick="restartAgent('drilling')">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Haulage Fleet</strong></td>
+                                                <td>Dispatch + cycle optimisation</td>
+                                                <td>
+                                                    <span class="status-indicator status-warning" id="haulageStatus"></span>
+                                                    <span class="text-warning" id="haulageStatusText">Load variance</span>
+                                                </td>
+                                                <td>
+                                                    <div class="cooperation-bar">
+                                                        <div class="cooperation-fill bg-warning" id="haulageCoopBar" style="width: 77%"></div>
+                                                    </div>
+                                                    <small id="haulageCoopValue">0.77</small>
+                                                </td>
+                                                <td id="haulageFocus">Reducing idle time and fuel consumption</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="showAgentDetails('haulage')">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-success" onclick="restartAgent('haulage')">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Processing Plant</strong></td>
+                                                <td>Throughput & recovery</td>
+                                                <td>
+                                                    <span class="status-indicator status-stable" id="processingStatus"></span>
+                                                    <span class="text-success" id="processingStatusText">Optimal</span>
+                                                </td>
+                                                <td>
+                                                    <div class="cooperation-bar">
+                                                        <div class="cooperation-fill bg-success" id="processingCoopBar" style="width: 89%"></div>
+                                                    </div>
+                                                    <small id="processingCoopValue">0.89</small>
+                                                </td>
+                                                <td id="processingFocus">Maximizing recovery with energy constraints</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="showAgentDetails('processing')">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-success" onclick="restartAgent('processing')">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Environmental Safeguard</strong></td>
+                                                <td>Emissions + tailings</td>
+                                                <td>
+                                                    <span class="status-indicator status-warning" id="environmentStatus"></span>
+                                                    <span class="text-warning" id="environmentStatusText">High energy trends</span>
+                                                </td>
+                                                <td>
+                                                    <div class="cooperation-bar">
+                                                        <div class="cooperation-fill bg-warning" id="environmentCoopBar" style="width: 70%"></div>
+                                                    </div>
+                                                    <small id="environmentCoopValue">0.70</small>
+                                                </td>
+                                                <td id="environmentFocus">Monitoring emissions and water usage</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="showAgentDetails('environment')">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-success" onclick="restartAgent('environment')">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6>AI Collaboration Insights</h6>
+                                    <div class="alert alert-info" id="aiInsight">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        <strong>Operational Tension Detected:</strong> Haulage fleet optimization is conflicting with environmental targets. Consider redistributing loads to reduce peak energy demand.
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <button class="btn btn-primary" onclick="runCollaborationAnalysis()">
+                                            <i class="fas fa-cogs me-2"></i>Run Collaboration Analysis
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="optimizeAllAgents()">
+                                            <i class="fas fa-magic me-2"></i>Optimize All Agents
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scenario Simulator Tab -->
+            <div class="tab-pane fade" id="scenarios" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Scenario Simulator</h5>
+                                <p class="mb-0 text-muted">Human + machine collaboration for decision support</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <div class="card scenario-card h-100" onclick="runScenario('truckIdle')">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-truck-loading fa-2x text-primary mb-3"></i>
+                                                <h6>Reduce Truck Idle by 10%</h6>
+                                                <p class="text-muted small">Optimize haulage cycles and reduce fuel consumption</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card scenario-card h-100" onclick="runScenario('fragmentation')">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-mountain fa-2x text-warning mb-3"></i>
+                                                <h6>Finer Fragmentation</h6>
+                                                <p class="text-muted small">Increase grinding efficiency with optimized blasting</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card scenario-card h-100" onclick="runScenario('solarShift')">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-sun fa-2x text-success mb-3"></i>
+                                                <h6>Add Solar Shift</h6>
+                                                <p class="text-muted small">Shift energy-intensive operations to solar peak hours</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="scenarioResults">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Scenario</th>
+                                                    <th>Cost Impact</th>
+                                                    <th>GHG Emissions</th>
+                                                    <th>Ore Recovery</th>
+                                                    <th>Recommendation</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="scenarioTableBody">
+                                                <tr>
+                                                    <td>Reduce truck idle by 10%</td>
+                                                    <td class="text-success">↓ 6%</td>
+                                                    <td class="text-success">↓ 8%</td>
+                                                    <td>–</td>
+                                                    <td><span class="badge bg-success">Implement</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-success" onclick="implementScenario('truckIdle')">Implement</button>
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="saveScenario('truckIdle')">Save</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Finer fragmentation</td>
+                                                    <td class="text-danger">↑ energy</td>
+                                                    <td class="text-success">↓ waste</td>
+                                                    <td class="text-success">↑ 3%</td>
+                                                    <td><span class="badge bg-warning">Further review</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-warning" onclick="reviewScenario('fragmentation')">Review</button>
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="saveScenario('fragmentation')">Save</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Add solar shift</td>
+                                                    <td class="text-success">↓ 5%</td>
+                                                    <td class="text-success">↓ 16%</td>
+                                                    <td>–</td>
+                                                    <td><span class="badge bg-success">Approve</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-success" onclick="implementScenario('solarShift')">Implement</button>
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="saveScenario('solarShift')">Save</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <h6>Scenario Impact Analysis</h6>
+                                        <p id="scenarioAnalysisText">This aligns with South Australia's green mining strategy by prioritizing emissions reduction while maintaining operational efficiency.</p>
+                                        <div class="alert alert-success" id="scenarioRecommendation">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <strong>Optimal Scenario Identified:</strong> Implementing both "Reduce truck idle by 10%" and "Add solar shift" would achieve a 21% reduction in emissions with minimal operational impact.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card metric-card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Scenario Parameters</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Energy Cost ($/MWh)</label>
+                                    <input type="range" class="form-range" min="50" max="150" value="85" id="energyCost">
+                                    <div class="text-end"><span id="energyCostValue">85</span> $/MWh</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Carbon Price ($/t CO₂-e)</label>
+                                    <input type="range" class="form-range" min="10" max="50" value="25" id="carbonPrice">
+                                    <div class="text-end"><span id="carbonPriceValue">25</span> $/t CO₂-e</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Ore Grade Variability</label>
+                                    <input type="range" class="form-range" min="1" max="10" value="5" id="oreGrade">
+                                    <div class="text-end"><span id="oreGradeValue">Medium</span></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Water Availability</label>
+                                    <input type="range" class="form-range" min="1" max="10" value="7" id="waterAvailability">
+                                    <div class="text-end"><span id="waterAvailabilityValue">Good</span></div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="runCustomScenario()">Run Custom Scenario</button>
+                                    <button class="btn btn-outline-secondary" onclick="resetScenarioParameters()">Reset Parameters</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card metric-card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="card-title mb-0">Decision Impact Matrix</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="impactChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compliance Roadmap Tab -->
+            <div class="tab-pane fade" id="compliance" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Sustainability Compliance Roadmap</h5>
+                                <p class="mb-0 text-muted">Mapping performance to SA regulations + industry frameworks</p>
+                            </div>
+                            <div class="card-body compliance-roadmap">
+                                <div class="compliance-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6>SA Net Zero 2050 Alignment</h6>
+                                            <p class="mb-0">Progress toward South Australia's net-zero emissions target</p>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-success" id="netZeroBadge">On Track</span>
+                                            <div class="progress mt-1" style="width: 100px; height: 8px;">
+                                                <div class="progress-bar bg-success" id="netZeroBar" role="progressbar" style="width: 75%"></div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="showComplianceDetails('netZero')">Details</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="compliance-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6>Global Industry Standard on Tailings Management</h6>
+                                            <p class="mb-0">Implementation of safer tailings storage facilities</p>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-warning" id="tailingsBadge">In Progress</span>
+                                            <div class="progress mt-1" style="width: 100px; height: 8px;">
+                                                <div class="progress-bar bg-warning" id="tailingsComplianceBar" role="progressbar" style="width: 60%"></div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="showComplianceDetails('tailings')">Details</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="compliance-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6>UN SDG #12 Responsible Consumption & Production</h6>
+                                            <p class="mb-0">Sustainable resource management and reduction of waste</p>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-success" id="sdgBadge">On Track</span>
+                                            <div class="progress mt-1" style="width: 100px; height: 8px;">
+                                                <div class="progress-bar bg-success" id="sdgBar" role="progressbar" style="width: 82%"></div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="showComplianceDetails('sdg')">Details</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="compliance-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6>Water Stewardship Framework</h6>
+                                            <p class="mb-0">Implementation of water recycling and conservation measures</p>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-warning" id="waterBadge">In Progress</span>
+                                            <div class="progress mt-1" style="width: 100px; height: 8px;">
+                                                <div class="progress-bar bg-warning" id="waterComplianceBar" role="progressbar" style="width: 45%"></div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="showComplianceDetails('water')">Details</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="compliance-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6>Biodiversity Management Plan</h6>
+                                            <p class="mb-0">Rehabilitation and protection of local ecosystems</p>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-danger" id="biodiversityBadge">Needs Attention</span>
+                                            <div class="progress mt-1" style="width: 100px; height: 8px;">
+                                                <div class="progress-bar bg-danger" id="biodiversityBar" role="progressbar" style="width: 30%"></div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="showComplianceDetails('biodiversity')">Details</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card metric-card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="card-title mb-0">Compliance Risk Assessment</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="complianceChart" height="300"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card metric-card mt-3">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">Audit Readiness</h5>
+                                <button class="btn btn-sm btn-outline-light" onclick="runAuditCheck()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center">
+                                    <div class="display-4 text-success" id="auditScore">85%</div>
+                                    <p class="mb-0">Overall Preparedness</p>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Documentation</span>
+                                        <span id="docScore">92%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-success" id="docBar" role="progressbar" style="width: 92%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Data Integrity</span>
+                                        <span id="dataScore">88%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-success" id="dataBar" role="progressbar" style="width: 88%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Process Compliance</span>
+                                        <span id="processScore">79%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" id="processBar" role="progressbar" style="width: 79%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Stakeholder Engagement</span>
+                                        <span id="stakeholderScore">81%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" id="stakeholderBar" role="progressbar" style="width: 81%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid mt-3">
+                                    <button class="btn btn-success" onclick="generateAuditReport()">
+                                        <i class="fas fa-file-pdf me-2"></i>Generate Audit Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Detail Modal -->
+    <div class="modal fade agent-detail-modal" id="agentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="agentModalTitle">Agent Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="agentModalBody">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="agentConfigBtn">Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compliance Detail Modal -->
+    <div class="modal fade" id="complianceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="complianceModalTitle">Compliance Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="complianceModalBody">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="showActionPlan()">Action Plan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentDataView = 'realtime';
+        let impactChart, complianceChart;
+        let agentDetails = {
+            drilling: {
+                name: "Drilling/Blasting Agent",
+                status: "stable",
+                cooperation: 0.92,
+                focus: "Optimal fragmentation for processing",
+                details: "This AI agent optimizes drilling patterns and blast designs to achieve optimal fragmentation size, reducing downstream processing energy requirements.",
+                performance: "Current performance: 94% efficiency",
+                alerts: ["Fragmentation consistency within target range", "Drill bit wear at 78% - replacement scheduled"]
+            },
+            haulage: {
+                name: "Haulage Fleet Agent", 
+                status: "warning",
+                cooperation: 0.77,
+                focus: "Reducing idle time and fuel consumption",
+                details: "Optimizes truck dispatch, routing, and load management to minimize fuel consumption and cycle times while maintaining production targets.",
+                performance: "Current performance: 82% efficiency",
+                alerts: ["High variance in truck load factors", "Route 3B showing congestion during shifts 2-3"]
+            },
+            processing: {
+                name: "Processing Plant Agent",
+                status: "stable", 
+                cooperation: 0.89,
+                focus: "Maximizing recovery with energy constraints",
+                details: "Manages grinding, flotation, and dewatering processes to maximize mineral recovery while staying within energy and water consumption limits.",
+                performance: "Current performance: 91.5% recovery rate",
+                alerts: ["Mill throughput at optimal level", "Reagent consumption 5% below target"]
+            },
+            environment: {
+                name: "Environmental Safeguard Agent",
+                status: "warning",
+                cooperation: 0.70,
+                focus: "Monitoring emissions and water usage",
+                details: "Tracks environmental metrics in real-time, identifies trends, and recommends operational adjustments to maintain compliance with sustainability targets.",
+                performance: "Current performance: 88% of targets met",
+                alerts: ["Energy consumption trending 8% above target", "Water recycling rate at 72% - target is 75%"]
+            }
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            startRealTimeUpdates();
+            setupEventListeners();
+        });
+
+        function initializeDashboard() {
+            drawImpactChart();
+            drawComplianceChart();
+            
+            // Set initial states
+            updateTimeViewButtons();
+        }
+
+        function setupEventListeners() {
+            // Time view buttons
+            document.getElementById('realtimeBtn').addEventListener('click', function() {
+                setTimeView('realtime');
+            });
+            document.getElementById('dailyBtn').addEventListener('click', function() {
+                setTimeView('daily');
+            });
+            document.getElementById('weeklyBtn').addEventListener('click', function() {
+                setTimeView('weekly');
+            });
+            
+            // Digital twin button
+            document.getElementById('exploreTwinBtn').addEventListener('click', function() {
+                exploreDigitalTwin();
+            });
+            
+            // Environmental metrics refresh
+            document.getElementById('refreshEnvBtn').addEventListener('click', function() {
+                refreshEnvironmentalMetrics();
+            });
+            
+            // Scenario parameter sliders
+            document.getElementById('energyCost').addEventListener('input', function() {
+                document.getElementById('energyCostValue').textContent = this.value;
+            });
+            
+            document.getElementById('carbonPrice').addEventListener('input', function() {
+                document.getElementById('carbonPriceValue').textContent = this.value;
+            });
+            
+            document.getElementById('oreGrade').addEventListener('input', function() {
+                const value = parseInt(this.value);
+                let text = "Low";
+                if (value > 7) text = "High";
+                else if (value > 4) text = "Medium";
+                document.getElementById('oreGradeValue').textContent = text;
+            });
+            
+            document.getElementById('waterAvailability').addEventListener('input', function() {
+                const value = parseInt(this.value);
+                let text = "Poor";
+                if (value > 7) text = "Good";
+                else if (value > 4) text = "Moderate";
+                document.getElementById('waterAvailabilityValue').textContent = text;
+            });
+            
+            // Agent modal configuration button
+            document.getElementById('agentConfigBtn').addEventListener('click', function() {
+                showAgentConfiguration();
+            });
+        }
+
+        function setTimeView(view) {
+            currentDataView = view;
+            updateTimeViewButtons();
+            
+            // Update dashboard content based on view
+            switch(view) {
+                case 'realtime':
+                    showNotification('Switched to real-time data view', 'info');
+                    break;
+                case 'daily':
+                    showNotification('Switched to 24-hour trend view', 'info');
+                    break;
+                case 'weekly':
+                    showNotification('Switched to weekly overview', 'info');
+                    break;
+            }
+            
+            // In a real application, this would fetch and display different data
+        }
+
+        function updateTimeViewButtons() {
+            document.getElementById('realtimeBtn').classList.remove('active');
+            document.getElementById('dailyBtn').classList.remove('active');
+            document.getElementById('weeklyBtn').classList.remove('active');
+            
+            document.getElementById(currentDataView + 'Btn').classList.add('active');
+        }
+
+        function startRealTimeUpdates() {
+            // Simulate real-time data updates every 5 seconds
+            setInterval(updateRealTimeData, 5000);
+        }
+
+        function updateRealTimeData() {
+            // Only update if in realtime view
+            if (currentDataView !== 'realtime') return;
+            
+            // Simulate small fluctuations in KPIs
+            const sei = 72 + (Math.random() * 6 - 3);
+            const carbon = 18.5 + (Math.random() * 0.4 - 0.2);
+            const recovery = 91.5 + (Math.random() * 0.6 - 0.3);
+            const energy = 3.2 + (Math.random() * 0.1 - 0.05);
+            
+            // Update KPI displays
+            document.getElementById('seiValue').textContent = Math.round(sei) + '/100';
+            document.getElementById('seiBar').style.width = Math.round(sei) + '%';
+            
+            document.getElementById('carbonValue').textContent = carbon.toFixed(1) + ' kg CO₂-e/t';
+            document.getElementById('carbonBar').style.width = ((carbon / 28.5) * 100).toFixed(0) + '%';
+            
+            document.getElementById('recoveryValue').textContent = recovery.toFixed(1) + '%';
+            document.getElementById('recoveryBar').style.width = recovery.toFixed(1) + '%';
+            
+            document.getElementById('energyValue').textContent = energy.toFixed(1) + ' kWh/t';
+            document.getElementById('energyBar').style.width = ((3.8 - energy) / 1.8 * 100).toFixed(0) + '%';
+            
+            // Occasionally show a notification about data updates
+            if (Math.random() > 0.7) {
+                showNotification('Real-time data updated', 'success');
+            }
+        }
+
+        function exploreDigitalTwin() {
+            showNotification('Opening Digital Twin visualization...', 'info');
+            
+            // Simulate loading
+            setTimeout(() => {
+                // In a real application, this would open the digital twin interface
+                showNotification('Digital Twin loaded. Exploring haul routes and ore grade maps.', 'success');
+                
+                // Update the digital twin placeholder to show it's active
+                const twin = document.querySelector('.digital-twin-placeholder');
+                twin.innerHTML = `
+                    <div>
+                        <i class="fas fa-map fa-4x mb-3"></i>
+                        <h4>Digital Twin Active</h4>
+                        <p>Haul routes • Ore grade maps • Stockpile status</p>
+                        <div class="mt-3">
+                            <button class="btn btn-light me-2" onclick="showHaulRoutes()">Haul Routes</button>
+                            <button class="btn btn-light" onclick="showOreGrades()">Ore Grades</button>
+                        </div>
+                    </div>
+                `;
+            }, 1500);
+        }
+
+        function showHaulRoutes() {
+            showNotification('Displaying haul route optimization heatmap', 'info');
+        }
+
+        function showOreGrades() {
+            showNotification('Displaying ore grade distribution map', 'info');
+        }
+
+        function refreshEnvironmentalMetrics() {
+            showNotification('Refreshing environmental metrics...', 'info');
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Update with slightly changed values
+                const scope1 = 12.4 + (Math.random() * 0.4 - 0.2);
+                const scope2 = 6.1 + (Math.random() * 0.2 - 0.1);
+                const tailings = 42 + (Math.random() * 2 - 1);
+                const water = 0.68 + (Math.random() * 0.04 - 0.02);
+                const land = 42 + (Math.random() * 2 - 1);
+                
+                document.getElementById('scope1Value').textContent = scope1.toFixed(1) + ' t CO₂-e';
+                document.getElementById('scope2Value').textContent = scope2.toFixed(1) + ' t CO₂-e';
+                document.getElementById('tailingsCurrent').textContent = Math.round(tailings) + ' kt';
+                document.getElementById('waterIntensity').textContent = water.toFixed(2) + ' kL/t';
+                document.getElementById('landRehab').textContent = Math.round(land) + '%';
+                
+                document.getElementById('scope1Bar').style.width = ((scope1 / 18.5) * 100).toFixed(0) + '%';
+                document.getElementById('scope2Bar').style.width = ((scope2 / 9.2) * 100).toFixed(0) + '%';
+                document.getElementById('tailingsBar').style.width = ((tailings / 65) * 100).toFixed(0) + '%';
+                document.getElementById('waterBar').style.width = (water * 100).toFixed(0) + '%';
+                document.getElementById('landBar').style.width = Math.round(land) + '%';
+                
+                showNotification('Environmental metrics updated', 'success');
+            }, 1000);
+        }
+
+        function showAgentDetails(agent) {
+            const agentData = agentDetails[agent];
+            const modalTitle = document.getElementById('agentModalTitle');
+            const modalBody = document.getElementById('agentModalBody');
+            
+            modalTitle.textContent = agentData.name;
+            
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h6>Status</h6>
+                    <span class="badge bg-${agentData.status === 'stable' ? 'success' : 'warning'}">${agentData.status === 'stable' ? 'Stable' : 'Needs Attention'}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Cooperation Level</h6>
+                    <div class="cooperation-bar">
+                        <div class="cooperation-fill bg-${agentData.cooperation > 0.8 ? 'success' : 'warning'}" style="width: ${agentData.cooperation * 100}%"></div>
+                    </div>
+                    <small>${agentData.cooperation}</small>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Current Focus</h6>
+                    <p>${agentData.focus}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Details</h6>
+                    <p>${agentData.details}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Performance</h6>
+                    <p>${agentData.performance}</p>
+                </div>
+                
+                <div>
+                    <h6>Recent Alerts</h6>
+                    <ul>
+                        ${agentData.alerts.map(alert => `<li>${alert}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            // Update configuration button
+            document.getElementById('agentConfigBtn').setAttribute('data-agent', agent);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('agentModal'));
+            modal.show();
+        }
+
+        function showAgentConfiguration() {
+            const agent = document.getElementById('agentConfigBtn').getAttribute('data-agent');
+            showNotification(`Opening configuration for ${agentDetails[agent].name}`, 'info');
+            
+            // Close the current modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('agentModal'));
+            modal.hide();
+            
+            // In a real application, this would open a configuration interface
+        }
+
+        function restartAgent(agent) {
+            showNotification(`Restarting ${agentDetails[agent].name}...`, 'warning');
+            
+            // Simulate restart process
+            setTimeout(() => {
+                // Update agent status to show it's restarting
+                document.getElementById(agent + 'StatusText').textContent = 'Restarting...';
+                document.getElementById(agent + 'Status').className = 'status-indicator status-warning';
+                
+                // After another delay, show it's back online
+                setTimeout(() => {
+                    document.getElementById(agent + 'StatusText').textContent = 'Stable';
+                    document.getElementById(agent + 'Status').className = 'status-indicator status-stable';
+                    
+                    // Slightly improve cooperation level
+                    const newCoop = Math.min(agentDetails[agent].cooperation + 0.05, 0.95);
+                    agentDetails[agent].cooperation = newCoop;
+                    
+                    document.getElementById(agent + 'CoopValue').textContent = newCoop.toFixed(2);
+                    document.getElementById(agent + 'CoopBar').style.width = (newCoop * 100) + '%';
+                    document.getElementById(agent + 'CoopBar').className = `cooperation-fill bg-${newCoop > 0.8 ? 'success' : 'warning'}`;
+                    
+                    showNotification(`${agentDetails[agent].name} restarted successfully`, 'success');
+                }, 2000);
+            }, 1000);
+        }
+
+        function runCollaborationAnalysis() {
+            showNotification('Running AI collaboration analysis...', 'info');
+            
+            // Simulate analysis
+            setTimeout(() => {
+                // Update AI insight with new analysis
+                document.getElementById('aiInsight').innerHTML = `
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Collaboration Analysis Complete:</strong> All agents are functioning within expected parameters. Recommendation: Fine-tune haulage fleet routing to reduce conflict with environmental targets.
+                `;
+                
+                // Slightly improve cooperation levels for all agents
+                for (const agent in agentDetails) {
+                    if (agentDetails[agent].cooperation < 0.95) {
+                        agentDetails[agent].cooperation += 0.03;
+                        
+                        document.getElementById(agent + 'CoopValue').textContent = agentDetails[agent].cooperation.toFixed(2);
+                        document.getElementById(agent + 'CoopBar').style.width = (agentDetails[agent].cooperation * 100) + '%';
+                        document.getElementById(agent + 'CoopBar').className = `cooperation-fill bg-${agentDetails[agent].cooperation > 0.8 ? 'success' : 'warning'}`;
+                    }
+                }
+                
+                showNotification('Collaboration analysis completed', 'success');
+            }, 3000);
+        }
+
+        function optimizeAllAgents() {
+            showNotification('Optimizing all AI agents...', 'info');
+            
+            // Simulate optimization
+            setTimeout(() => {
+                // Improve all agent statuses and cooperation levels
+                for (const agent in agentDetails) {
+                    // Set status to stable
+                    document.getElementById(agent + 'StatusText').textContent = 'Optimal';
+                    document.getElementById(agent + 'Status').className = 'status-indicator status-stable';
+                    
+                    // Improve cooperation
+                    agentDetails[agent].cooperation = Math.min(agentDetails[agent].cooperation + 0.08, 0.98);
+                    
+                    document.getElementById(agent + 'CoopValue').textContent = agentDetails[agent].cooperation.toFixed(2);
+                    document.getElementById(agent + 'CoopBar').style.width = (agentDetails[agent].cooperation * 100) + '%';
+                    document.getElementById(agent + 'CoopBar').className = 'cooperation-fill bg-success';
+                    
+                    // Update focus to show optimization
+                    document.getElementById(agent + 'Focus').textContent = 'Optimized - ' + agentDetails[agent].focus;
+                }
+                
+                // Update AI insight
+                document.getElementById('aiInsight').innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>All Agents Optimized:</strong> System performance improved across all operational areas. Cooperation levels at optimal ranges.
+                `;
+                
+                showNotification('All AI agents optimized successfully', 'success');
+            }, 4000);
+        }
+
+        function runScenario(scenarioType) {
+            let scenarioName = "";
+            let message = "";
+            
+            switch(scenarioType) {
+                case 'truckIdle':
+                    scenarioName = "Reduce Truck Idle by 10%";
+                    message = "AI is simulating impact of reduced truck idle time on fuel consumption, emissions, and operational costs...";
+                    break;
+                case 'fragmentation':
+                    scenarioName = "Finer Fragmentation";
+                    message = "AI is analyzing the trade-offs between increased blasting energy and improved processing efficiency...";
+                    break;
+                case 'solarShift':
+                    scenarioName = "Add Solar Shift";
+                    message = "AI is calculating the benefits of shifting energy-intensive operations to peak solar generation hours...";
+                    break;
+            }
+            
+            showNotification(`Running scenario: ${scenarioName}`, 'info');
+            
+            // Update scenario analysis text
+            document.getElementById('scenarioAnalysisText').textContent = `Analysis of "${scenarioName}" scenario in progress. Evaluating impacts across energy use, emissions, ore recovery, and operational costs.`;
+            
+            // Simulate processing time
+            setTimeout(() => {
+                // Update recommendation based on scenario
+                let recommendation = "";
+                if (scenarioType === 'truckIdle' || scenarioType === 'solarShift') {
+                    recommendation = `<strong>Optimal Scenario Identified:</strong> Implementing "${scenarioName}" would achieve significant sustainability improvements with minimal operational impact.`;
+                    document.getElementById('scenarioRecommendation').className = 'alert alert-success';
+                } else {
+                    recommendation = `<strong>Scenario Requires Review:</strong> "${scenarioName}" shows mixed results with trade-offs between energy consumption and processing efficiency.`;
+                    document.getElementById('scenarioRecommendation').className = 'alert alert-warning';
+                }
+                
+                document.getElementById('scenarioRecommendation').innerHTML = `<i class="fas fa-lightbulb me-2"></i>${recommendation}`;
+                
+                showNotification(`Scenario "${scenarioName}" analysis complete`, 'success');
+            }, 3000);
+        }
+
+        function runCustomScenario() {
+            const energyCost = document.getElementById('energyCost').value;
+            const carbonPrice = document.getElementById('carbonPrice').value;
+            const oreGrade = document.getElementById('oreGradeValue').textContent;
+            const waterAvailability = document.getElementById('waterAvailabilityValue').textContent;
+            
+            showNotification('Running custom scenario with current parameters...', 'info');
+            
+            // Update scenario analysis
+            document.getElementById('scenarioAnalysisText').textContent = 
+                `Custom scenario analysis with parameters: Energy Cost=$${energyCost}/MWh, Carbon Price=$${carbonPrice}/t, Ore Grade=${oreGrade}, Water Availability=${waterAvailability}.`;
+            
+            // Simulate processing
+            setTimeout(() => {
+                // Determine outcome based on parameters
+                let recommendation = "";
+                if (carbonPrice > 30 && energyCost < 100) {
+                    recommendation = `<strong>Favorable Conditions:</strong> Current parameters support sustainability-focused operational changes with positive economic returns.`;
+                    document.getElementById('scenarioRecommendation').className = 'alert alert-success';
+                } else {
+                    recommendation = `<strong>Mixed Outlook:</strong> Some parameters are less favorable for sustainability investments. Consider adjusting energy sourcing or carbon strategy.`;
+                    document.getElementById('scenarioRecommendation').className = 'alert alert-warning';
+                }
+                
+                document.getElementById('scenarioRecommendation').innerHTML = `<i class="fas fa-chart-line me-2"></i>${recommendation}`;
+                
+                showNotification('Custom scenario analysis complete', 'success');
+            }, 4000);
+        }
+
+        function resetScenarioParameters() {
+            document.getElementById('energyCost').value = 85;
+            document.getElementById('energyCostValue').textContent = 85;
+            
+            document.getElementById('carbonPrice').value = 25;
+            document.getElementById('carbonPriceValue').textContent = 25;
+            
+            document.getElementById('oreGrade').value = 5;
+            document.getElementById('oreGradeValue').textContent = 'Medium';
+            
+            document.getElementById('waterAvailability').value = 7;
+            document.getElementById('waterAvailabilityValue').textContent = 'Good';
+            
+            showNotification('Scenario parameters reset to defaults', 'info');
+        }
+
+        function implementScenario(scenarioType) {
+            let scenarioName = "";
+            switch(scenarioType) {
+                case 'truckIdle': scenarioName = "Reduce Truck Idle by 10%"; break;
+                case 'fragmentation': scenarioName = "Finer Fragmentation"; break;
+                case 'solarShift': scenarioName = "Add Solar Shift"; break;
+            }
+            
+            showNotification(`Implementing scenario: ${scenarioName}`, 'info');
+            
+            // Simulate implementation
+            setTimeout(() => {
+                // Update the scenario table to show it's implemented
+                const rows = document.querySelectorAll('#scenarioTableBody tr');
+                rows.forEach(row => {
+                    if (row.cells[0].textContent.toLowerCase().includes(scenarioName.toLowerCase())) {
+                        row.cells[4].innerHTML = '<span class="badge bg-success">Implemented</span>';
+                        row.cells[5].innerHTML = '<button class="btn btn-sm btn-outline-secondary" disabled>Implemented</button>';
+                    }
+                });
+                
+                showNotification(`Scenario "${scenarioName}" implemented successfully`, 'success');
+            }, 2000);
+        }
+
+        function reviewScenario(scenarioType) {
+            let scenarioName = "";
+            switch(scenarioType) {
+                case 'truckIdle': scenarioName = "Reduce Truck Idle by 10%"; break;
+                case 'fragmentation': scenarioName = "Finer Fragmentation"; break;
+                case 'solarShift': scenarioName = "Add Solar Shift"; break;
+            }
+            
+            showNotification(`Opening detailed review for: ${scenarioName}`, 'info');
+            
+            // In a real application, this would open a detailed review interface
+        }
+
+        function saveScenario(scenarioType) {
+            let scenarioName = "";
+            switch(scenarioType) {
+                case 'truckIdle': scenarioName = "Reduce Truck Idle by 10%"; break;
+                case 'fragmentation': scenarioName = "Finer Fragmentation"; break;
+                case 'solarShift': scenarioName = "Add Solar Shift"; break;
+            }
+            
+            showNotification(`Scenario "${scenarioName}" saved to library`, 'success');
+        }
+
+        function showComplianceDetails(complianceArea) {
+            let title = "";
+            let details = "";
+            
+            switch(complianceArea) {
+                case 'netZero':
+                    title = "SA Net Zero 2050 Alignment";
+                    details = "Current progress: 75% alignment with South Australia's net-zero emissions roadmap. Key initiatives: electrification of haulage fleet, solar power integration, and methane capture implementation.";
+                    break;
+                case 'tailings':
+                    title = "Global Industry Standard on Tailings Management";
+                    details = "Implementation status: 60% complete. Recent progress: completed risk assessment for Tailings Storage Facility 2B. Next steps: implement real-time monitoring system by Q3.";
+                    break;
+                case 'sdg':
+                    title = "UN SDG #12 Responsible Consumption & Production";
+                    details = "Alignment level: 82%. Strong performance in waste reduction and resource efficiency. Areas for improvement: circular economy initiatives for processing by-products.";
+                    break;
+                case 'water':
+                    title = "Water Stewardship Framework";
+                    details = "Implementation progress: 45%. Current focus: increasing water recycling rate from 72% to 75% target. Challenges: seasonal variability in water availability.";
+                    break;
+                case 'biodiversity':
+                    title = "Biodiversity Management Plan";
+                    details = "Progress: 30%. Delayed due to regulatory approval process for rehabilitation plan. Action required: expedite consultation with traditional owners and environmental agencies.";
+                    break;
+            }
+            
+            document.getElementById('complianceModalTitle').textContent = title;
+            document.getElementById('complianceModalBody').textContent = details;
+            
+            const modal = new bootstrap.Modal(document.getElementById('complianceModal'));
+            modal.show();
+        }
+
+        function showActionPlan() {
+            showNotification('Generating compliance action plan...', 'info');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('complianceModal'));
+            modal.hide();
+            
+            // In a real application, this would generate and display an action plan
+        }
+
+        function runAuditCheck() {
+            showNotification('Running audit readiness check...', 'info');
+            
+            // Simulate audit check
+            setTimeout(() => {
+                // Update audit scores with slight variations
+                const auditScore = 85 + (Math.random() * 6 - 3);
+                const docScore = 92 + (Math.random() * 4 - 2);
+                const dataScore = 88 + (Math.random() * 4 - 2);
+                const processScore = 79 + (Math.random() * 6 - 3);
+                const stakeholderScore = 81 + (Math.random() * 6 - 3);
+                
+                document.getElementById('auditScore').textContent = Math.round(auditScore) + '%';
+                document.getElementById('docScore').textContent = Math.round(docScore) + '%';
+                document.getElementById('dataScore').textContent = Math.round(dataScore) + '%';
+                document.getElementById('processScore').textContent = Math.round(processScore) + '%';
+                document.getElementById('stakeholderScore').textContent = Math.round(stakeholderScore) + '%';
+                
+                document.getElementById('docBar').style.width = Math.round(docScore) + '%';
+                document.getElementById('dataBar').style.width = Math.round(dataScore) + '%';
+                document.getElementById('processBar').style.width = Math.round(processScore) + '%';
+                document.getElementById('stakeholderBar').style.width = Math.round(stakeholderScore) + '%';
+                
+                // Update bar colors based on scores
+                document.getElementById('docBar').className = `progress-bar bg-${docScore >= 90 ? 'success' : 'warning'}`;
+                document.getElementById('dataBar').className = `progress-bar bg-${dataScore >= 90 ? 'success' : 'warning'}`;
+                document.getElementById('processBar').className = `progress-bar bg-${processScore >= 80 ? 'success' : 'warning'}`;
+                document.getElementById('stakeholderBar').className = `progress-bar bg-${stakeholderScore >= 80 ? 'success' : 'warning'}`;
+                
+                showNotification('Audit readiness check completed', 'success');
+            }, 2000);
+        }
+
+        function generateAuditReport() {
+            showNotification('Generating comprehensive audit report...', 'info');
+            
+            // Simulate report generation
+            setTimeout(() => {
+                showNotification('Audit report generated successfully. Download will start automatically.', 'success');
+                
+                // In a real application, this would trigger a PDF download
+            }, 3000);
+        }
+
+        function drawImpactChart() {
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            
+            impactChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Cost', 'Emissions', 'Recovery', 'Water Use', 'Energy', 'Safety'],
+                    datasets: [{
+                        label: 'Current Operation',
+                        data: [65, 70, 85, 60, 75, 90],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    }, {
+                        label: 'Optimized Scenario',
+                        data: [75, 85, 88, 70, 80, 90],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawComplianceChart() {
+            const ctx = document.getElementById('complianceChart').getContext('2d');
+            
+            complianceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                    datasets: [{
+                        data: [65, 25, 10],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 205, 86, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showNotification(message, type) {
+            const notificationArea = document.getElementById('notificationArea');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'warning' ? 'alert-warning' : 
+                              type === 'danger' ? 'alert-danger' : 'alert-info';
+            
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show`;
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            notificationArea.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
